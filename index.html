@@ -100,9 +100,9 @@
             }
 
             // 장애물 (속도: 4로 하향 조정)
-            if (Math.random() < 0.01) obstacles.push({ x: 600, w: 20, h: 40 });
+            if (Math.random() < 0.01) obstacles.push({ x: 600, w: 10, h: 30 });
             obstacles.forEach((ob, i) => {
-                ob.x -= 2; // 이동 속도 느리게 수정
+                ob.x -= 3; // 이동 속도 느리게 수정
                 if (ob.x + ob.w < 0) obstacles.splice(i, 1);
                 
                 // 충돌 판정
