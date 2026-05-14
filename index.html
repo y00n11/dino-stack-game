@@ -2,15 +2,16 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title> Double Jump Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NNKong - Mobile Support</title>
     <style>
-        body { margin: 0; background-color: #f7f7f7; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; }
+        body { margin: 0; background-color: #f7f7f7; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; touch-action: manipulation; }
         #setup { margin-top: 50px; text-align: center; background: #fff; padding: 30px; border: 2px solid #535353; }
         #game-container { display: none; margin-top: 50px; }
-        canvas { background-color: #fff; border-bottom: 2px solid #535353; }
-        .char-btn { padding: 10px 20px; margin: 5px; cursor: pointer; border: 1px solid #535353; background: #fff; font-family: inherit; }
+        canvas { background-color: #fff; border-bottom: 2px solid #535353; max-width: 100%; height: auto; }
+        .char-btn { padding: 10px 20px; margin: 5px; cursor: pointer; border: 1px solid #535353; background: #fff; font-family: inherit; font-weight: bold; }
         .char-btn:hover { background: #535353; color: #fff; }
-        #ui { width: 600px; display: flex; justify-content: space-between; margin-top: 10px; color: #535353; font-weight: bold; }
+        #ui { width: 600px; max-width: 90%; display: flex; justify-content: space-between; margin-top: 10px; color: #535353; font-weight: bold; }
         input { padding: 10px; border: 1px solid #535353; margin-bottom: 15px; width: 200px; }
     </style>
 </head>
@@ -44,32 +45,30 @@
             cat: [[1,0,0,0,0,0,1,0],[1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,0],[0,1,1,1,1,1,0,0],[0,1,0,0,0,1,0,0]],
             dog: [[1,1,1,0,0,0,0,0],[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,1,0],[0,1,0,0,0,1,0,0]],
             bird: [[0,0,1,1,1,0,0,0],[1,1,1,1,1,1,1,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0]],
-            gorilla:[
-                    [0,0,1,1,1,1,0,0],
-                    [0,1,1,0,1,1,1,0],
-                    [1,1,1,1,1,1,1,1],
-                    [1,1,1,1,1,1,1,1],
-                    [1,1,1,1,1,1,1,1],
-                    [1,1,1,1,1,1,1,1],
-                    [1,1,1,1,1,1,1,1],
-                    [0,1,1,1,1,1,1,0],
-                    [0,0,1,1,1,1,0,0],
-                    [0,1,1,1,1,1,1,0],
-                    [1,1,0,0,0,0,1,1]
-                ]};
+            gorilla: [
+                [1,0,0,0,0,0,0,1],
+                [1,0,0,1,1,0,0,1],
+                [1,1,1,1,1,1,1,1],
+                [0,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,0],
+                [0,1,1,1,1,1,1,0],
+                [0,1,1,0,0,1,1,0],
+                [1,1,0,0,0,0,1,1]
+            ]
+        };
 
         let selectedData = [];
         let gameActive = false;
         let score = 0;
         
-        // 캐릭터 설정 (속도 및 더블점프 관련 수치 조정)
         let dino = { 
             x: 50, y: 150, w: 40, h: 40, 
             dy: 0, 
-            jumpForce: 12,  // 점프 힘 
-            gravity: 0.5,   
+            jumpForce: 11,  
+            gravity: 0.6,   
             grounded: false,
-            jumpCount: 0    // 더블 점프 체크용
+            jumpCount: 0 
         };
         
         let obstacles = [];
@@ -96,29 +95,38 @@
             });
         }
 
+        // 점프 공통 함수
+        function handleJump() {
+            if (!gameActive) return;
+            if (dino.grounded || dino.jumpCount < 2) {
+                dino.dy = -dino.jumpForce;
+                dino.grounded = false;
+                dino.jumpCount++;
+                
+                if (dino.jumpCount === 1) document.getElementById('jump-status').innerText = "DOUBLE!";
+                else document.getElementById('jump-status').innerText = "MAX";
+            }
+        }
+
         function update() {
             if (!gameActive) return;
 
-            // 중력 및 이동
             dino.dy += dino.gravity;
             dino.y += dino.dy;
 
-            // 바닥 처리
             if (dino.y + dino.h > 195) {
                 dino.y = 195 - dino.h;
                 dino.dy = 0;
                 dino.grounded = true;
-                dino.jumpCount = 0; // 바닥에 닿으면 점프 횟수 리셋
+                dino.jumpCount = 0;
                 document.getElementById('jump-status').innerText = "READY";
             }
 
-            // 장애물 (속도)
-            if (Math.random() < 0.01) obstacles.push({ x: 600, w: 10, h: 30 });
+            if (Math.random() < 0.012) obstacles.push({ x: 600, w: 8, h: 35 });
             obstacles.forEach((ob, i) => {
-                ob.x -= 3; // 이동 속도 느리게 수정
+                ob.x -= 4.5; 
                 if (ob.x + ob.w < 0) obstacles.splice(i, 1);
                 
-                // 충돌 판정
                 if (dino.x < ob.x + ob.w && dino.x + dino.w > ob.x && dino.y + dino.h > 195 - ob.h) {
                     gameActive = false;
                     alert("GAME OVER\nSCORE: " + Math.floor(score/10));
@@ -138,20 +146,21 @@
             requestAnimationFrame(update);
         }
 
-        // 키 입력 (더블 점프 로직)
+        // 키보드 점프
         window.addEventListener('keydown', e => {
             if (e.code === 'Space') {
-                if (dino.grounded || dino.jumpCount < 2) {
-                    dino.dy = -dino.jumpForce;
-                    dino.grounded = false;
-                    dino.jumpCount++;
-                    
-                    // UI 표시 변경
-                    if (dino.jumpCount === 1) document.getElementById('jump-status').innerText = "DOUBLE!";
-                    else document.getElementById('jump-status').innerText = "MAX";
-                }
+                e.preventDefault();
+                handleJump();
             }
         });
+
+        // 모바일 터치 점프
+        window.addEventListener('touchstart', e => {
+            if (e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+                handleJump();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
