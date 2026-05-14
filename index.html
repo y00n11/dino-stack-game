@@ -17,7 +17,7 @@
 <body>
 
     <div id="setup">
-        <h2>냠냠콩</h2>
+        <h2>냠냠콩!!</h2>
         <input type="text" id="nick" placeholder="ENTER ID" maxlength="10"><br>
         <button class="char-btn" onclick="startGame('croc')">CROC</button>
         <button class="char-btn" onclick="startGame('cat')">CAT</button>
@@ -102,7 +102,7 @@
             // 장애물 (속도: 4로 하향 조정)
             if (Math.random() < 0.01) obstacles.push({ x: 600, w: 20, h: 40 });
             obstacles.forEach((ob, i) => {
-                ob.x -= 4; // 이동 속도 느리게 수정
+                ob.x -= 2; // 이동 속도 느리게 수정
                 if (ob.x + ob.w < 0) obstacles.splice(i, 1);
                 
                 // 충돌 판정
