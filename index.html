@@ -2,132 +2,117 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Dino Stack Game</title>
+    <title>Dino Stack - Character Select</title>
     <style>
-        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background-color: #f7f7f7; font-family: 'Courier New', Courier, monospace; }
-        #game-container { position: relative; margin-top: 50px; }
-        canvas { border-bottom: 2px solid #535353; background-color: #fff; }
-        #ui-layer { width: 600px; margin-top: 10px; display: flex; justify-content: space-between; color: #535353; }
-        .ranking-list { list-style: none; padding: 0; text-align: left; }
+        /* 군더더기 없는 디자인 */
+        body { margin: 0; background-color: #f7f7f7; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; }
+        #setup { margin-top: 50px; text-align: center; background: #fff; padding: 30px; border: 2px solid #535353; }
+        #game-container { display: none; margin-top: 50px; }
+        canvas { background-color: #fff; border-bottom: 2px solid #535353; }
+        .char-btn { padding: 10px 20px; margin: 5px; cursor: pointer; border: 1px solid #535353; background: #fff; font-family: inherit; }
+        .char-btn:hover { background: #535353; color: #fff; }
+        #ui { width: 600px; display: flex; justify-content: space-between; margin-top: 10px; color: #535353; font-weight: bold; }
+        input { padding: 10px; border: 1px solid #535353; margin-bottom: 15px; width: 200px; }
     </style>
 </head>
 <body>
 
+    <div id="setup">
+        <h2>SELECT CHARACTER</h2>
+        <input type="text" id="nick" placeholder="ENTER ID" maxlength="10"><br>
+        <button class="char-btn" onclick="startGame('croc')">CROC</button>
+        <button class="char-btn" onclick="startGame('cat')">CAT</button>
+        <button class="char-btn" onclick="startGame('dog')">DOG</button>
+        <button class="char-btn" onclick="startGame('bird')">BIRD</button>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas" width="600" height="200"></canvas>
-    </div>
-
-    <div id="ui-layer">
-        <div>
-            ID: <span id="user-id">---</span> | 
-            SCORE: <span id="current-score">0</span>
+        <div id="ui">
+            <div>ID: <span id="user-id"></span> | SCORE: <span id="score">0</span></div>
+            <div>STACK: [<span id="stack-count">0</span>]</div>
         </div>
-        <div>
-            STACK: [<span id="stack-count">0</span>] (Z: Use Item)
-        </div>
-    </div>
-
-    <div style="width: 600px; margin-top: 20px; color: #535353;">
-        <h3>TOP 5 RANKING</h3>
-        <ul id="ranking-list" class="ranking-list"></ul>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('current-score');
-        const stackEl = document.getElementById('stack-count');
-        const rankingEl = document.getElementById('ranking-list');
 
-        // 게임 설정
-        let nickname = prompt("Enter Nickname:", "Player");
-        if(!nickname) nickname = "Guest";
-        document.getElementById('user-id').innerText = nickname;
+        // 캐릭터 도트 데이터 (2차원 배열) - 1은 도트, 0은 빈칸
+        const CHARS = {
+            croc: [[0,0,0,0,0,1,1,1],[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,1,1],[0,1,0,1,0,1,0,0]],
+            cat: [[1,0,0,0,0,0,1,0],[1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,0],[0,1,1,1,1,1,0,0],[0,1,0,0,0,1,0,0]],
+            dog: [[1,1,1,0,0,0,0,0],[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,1,0],[0,1,0,0,0,1,0,0]],
+            bird: [[0,0,1,1,1,0,0,0],[1,1,1,1,1,1,1,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0]]
+        };
 
+        let selectedData = [];
+        let gameActive = false;
+        let score = 0;
+        let itemStack = []; // LIFO Stack
         let dino = { x: 50, y: 150, w: 40, h: 40, dy: 0, jump: 12, grounded: false };
         let obstacles = [];
-        let items = [];
-        let itemStack = []; // LIFO 자료구조
-        let gravity = 0.6;
-        let score = 0;
-        let gameActive = true;
+
+        function startGame(type) {
+            const nick = document.getElementById('nick').value || "Guest";
+            selectedData = CHARS[type];
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('user-id').innerText = nick;
+            gameActive = true;
+            update();
+        }
+
+        // 2차원 배열 데이터를 도트로 그리는 핵심 함수
+        function drawCharacter(data, x, y, size) {
+            const pixelSize = size / 8; // 8x8 기준 픽셀 크기
+            ctx.fillStyle = "#535353";
+            data.forEach((row, rIdx) => {
+                row.forEach((cell, cIdx) => {
+                    if (cell === 1) {
+                        ctx.fillRect(x + (cIdx * pixelSize), y + (rIdx * pixelSize), pixelSize, pixelSize);
+                    }
+                });
+            });
+        }
 
         function update() {
             if (!gameActive) return;
 
-            // 중력 및 이동
-            dino.dy += gravity;
+            // 중력 및 이동 로직
+            dino.dy += 0.6;
             dino.y += dino.dy;
-            if (dino.y + dino.h > 200) {
-                dino.y = 200 - dino.h;
+            if (dino.y + dino.h > 195) {
+                dino.y = 195 - dino.h;
                 dino.dy = 0;
                 dino.grounded = true;
             }
 
-            // 장애물 관리 (사각형 도트 형식)
+            // 장애물 (사각형 도트)
             if (Math.random() < 0.015) obstacles.push({ x: 600, w: 20, h: 40 });
             obstacles.forEach((ob, i) => {
-                ob.x -= 5;
+                ob.x -= 3;
                 if (ob.x + ob.w < 0) obstacles.splice(i, 1);
-                if (checkCollision(dino, ob)) gameOver();
-            });
-
-            // 아이템 관리 (PUSH)
-            if (Math.random() < 0.005) items.push({ x: 600, y: 100, w: 15, h: 15 });
-            items.forEach((it, i) => {
-                it.x -= 5;
-                if (it.x + it.w < 0) items.splice(i, 1);
-                if (checkCollision(dino, it)) {
-                    itemStack.push("SHIELD");
-                    items.splice(i, 1);
-                    stackEl.innerText = itemStack.length;
+                
+                // 충돌 판정
+                if (dino.x < ob.x + ob.w && dino.x + dino.w > ob.x && dino.y + dino.h > 195 - ob.h) {
+                    gameActive = false;
+                    alert("GAME OVER\nSCORE: " + Math.floor(score/10));
+                    location.reload();
                 }
             });
 
             score++;
-            scoreEl.innerText = Math.floor(score / 10);
-            draw();
-            requestAnimationFrame(update);
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('score').innerText = Math.floor(score / 10);
             
-            // 공룡 (도트 사각형)
-            ctx.fillStyle = "#535353";
-            ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
-
-            // 장애물
-            ctx.fillStyle = "#888888";
-            obstacles.forEach(ob => ctx.fillRect(ob.x, 200 - ob.h, ob.w, ob.h));
-
-            // 아이템
-            ctx.fillStyle = "#ff0000";
-            items.forEach(it => ctx.fillRect(it.x, it.y, it.w, it.h));
-        }
-
-        function checkCollision(a, b) {
-            let by = b.y || 200 - b.h;
-            return a.x < b.x + b.w && a.x + a.w > b.x && a.y < by + b.h && a.y + a.h > by;
-        }
-
-        function gameOver() {
-            gameActive = false;
-            saveScore(nickname, Math.floor(score / 10));
-            alert("GAME OVER\nScore: " + Math.floor(score/10));
-            location.reload();
-        }
-
-        function saveScore(n, s) {
-            let rank = JSON.parse(localStorage.getItem('dino_rank')) || [];
-            rank.push({ n, s });
-            rank.sort((a, b) => b.s - a.s);
-            localStorage.setItem('dino_rank', JSON.stringify(rank.slice(0, 5)));
-        }
-
-        function showRank() {
-            let rank = JSON.parse(localStorage.getItem('dino_rank')) || [];
-            rankingEl.innerHTML = rank.map((r, i) => `<li>${i+1}. ${r.n} - ${r.s}</li>`).join('');
+            // 캔버스 그리기
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCharacter(selectedData, dino.x, dino.y, 40); // 도트 캐릭터 렌더링
+            
+            ctx.fillStyle = "#888";
+            obstacles.forEach(ob => ctx.fillRect(ob.x, 195 - ob.h, ob.w, ob.h));
+            
+            requestAnimationFrame(update);
         }
 
         window.addEventListener('keydown', e => {
@@ -135,15 +120,7 @@
                 dino.dy = -dino.jump;
                 dino.grounded = false;
             }
-            if (e.code === 'KeyZ' && itemStack.length > 0) {
-                itemStack.pop(); // POP: 최근 아이템 소모
-                stackEl.innerText = itemStack.length;
-                // 무적 로직 등 추가 가능
-            }
         });
-
-        showRank();
-        update();
     </script>
 </body>
 </html>
