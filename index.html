@@ -23,6 +23,7 @@
         <button class="char-btn" onclick="startGame('cat')">CAT</button>
         <button class="char-btn" onclick="startGame('dog')">DOG</button>
         <button class="char-btn" onclick="startGame('bird')">BIRD</button>
+        <button class="char-btn" onclick="startGame('gorilla')">GORILLA</button>
     </div>
 
     <div id="game-container">
@@ -43,6 +44,12 @@
             cat: [[1,0,0,0,0,0,1,0],[1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,0],[0,1,1,1,1,1,0,0],[0,1,0,0,0,1,0,0]],
             dog: [[1,1,1,0,0,0,0,0],[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,1,0],[0,1,0,0,0,1,0,0]],
             bird: [[0,0,1,1,1,0,0,0],[1,1,1,1,1,1,1,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0]]
+            gorilla:[
+        [0,1,1,1,1,0,0,0],
+        [1,1,1,1,1,1,0,0],
+        [1,1,1,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1],
+        [0,1,1,0,0,1,1,0]]
         };
 
         let selectedData = [];
